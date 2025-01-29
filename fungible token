@@ -1,80 +1,49 @@
-  pragma solidity ^0.8.0;
+ from hedera import (
+    AccountId,
+    Client,
+    PrivateKey,
+    TopicCreateTransaction,
+    TopicId,
+    TopicMessageSubmitTransaction,
+    TopicMessageQuery,
+)
 
-import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+# Replace with your actual Hedera network account ID and private key
+OPERATOR_ID = AccountId.from_string("0.0.12345") 
+OPERATOR_KEY = PrivateKey.generate() 
 
-contract MyFT is ERC20 {
-    constructor(string memory _name, string memory _symbol) public ERC20(_name, _symbol) {}
+# Create a client connected to the Hedera network
+client = Client.for_testnet()
+client.set_operator(OPERATOR_ID, OPERATOR_KEY)
 
-    function mint(address account, uint256 amount) external {
-        balanceOf(account) += amount;
-        emit Transfer(address(0), account, amount);
-    }
-}
-  pragma solidity ^0.8.0;
+# Create a topic ID
+topic_create_tx = (
+    TopicCreateTransaction()
+    .execute(client)
+    .get_receipt(client)
+)
+topic_id = topic_create_tx.topic_id
 
-import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+# Send a message to the topic
+message = "Hello from Hedera!"
+message_submit_tx = (
+    TopicMessageSubmitTransaction()
+    .set_topic_id(topic_id)
+    .set_message(message.encode())
+    .execute(client)
+)
 
-contract MyFT is ERC20 {
-    constructor(string memory _name, string memory _symbol) public ERC20(_name, _symbol) {}
+print(f"Message sent with transaction ID: {message_submit_tx.transaction_id}")
 
-    function mint(address account, uint256 amount) external {
-        balanceOf(account) += amount;
-        emit Transfer(address(0), account, amount);
-    }
-}
- pragma solidity ^0.8.0;
+# Retrieve messages from the topic
+message_query = (
+    TopicMessageQuery()
+    .set_topic_id(topic_id)
+    .execute(client)
+)
 
-contract TokenTransfer {
-    function transfer(address from, address to, uint256 amount) external returns(bool success){
-        require(from != to);
-        
-        // Check if the sender has enough tokens for this transaction.
-        MyFT myft = new MyFT();
-        require(myft.balanceOf(from)>=amount);
+for message_object in message_query.messages:
+    received_message = message_object.message.decode()
+    print(f"Received message: {received_message}")
 
-        // Subtract from sender's balance
-        myft.transferFrom(from,to,amount); 
-
-        return true;
-    }
-}
-  pragma solidity ^0.8.0;
-
-import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
-contract TokenTransfer {
-    function transfer(address from, address to, uint256 amount) external returns(bool success){
-        require(from != to);
-        
-        // Check if the sender has enough tokens for this transaction.
-        MyFT myft = new MyFT();
-        require(myft.balanceOf(from)>=amount);
-
-        // Subtract from sender's balance
-        myft.transferFrom(from,to,amount); 
-
-        return true;
-    }
-}
-contract MyFT is ERC20 {
-    constructor(string memory _name, string memory _symbol) public ERC20(_name, _symbol) {}
-
-    function mint(address account, uint256 amount) external {
-        balanceOf(account) += amount;
-        emit Transfer(address(0), account, amount);
-    }
-
-import "./TokenTransfer.sol";
-  pragma solidity ^0.8.0;
-
-contract TokenSender {
-   function sendTokens() external returns(bool success){
-       require(msg.sender == 0xYourAddressHere);
-        MyFT myft = new MyFT();
-           uint256 amountToTransfer=10;
-            address recipient="someOtherUserAccount";
-        
-         // Call transfer
-          tokentransfer.transfer( msg.sender,recipient,amountToTransfer);
-
-    }
-}
+client.close()
