@@ -1,0 +1,52 @@
+from datetime import datetime
+
+class Event:
+    def __init__(self, name, start_time, end_time):
+        if start_time >= end_time:
+            raise ValueError("Start time must be before end time.")
+        self.name = name
+        self.start_time = start_time
+        self.end_time = end_time
+
+    def __str__(self):
+        return f"Event(name='{self.name}', start_time={self.start_time}, end_time={self.end_time})"
+
+
+class EventScheduler:
+    def __init__(self):
+        self.events = []
+
+    def add_event(self, event):
+        if not self.has_conflict(event):
+            self.events.append(event)
+        else:
+            print(f"Conflict detected for event: {event.name}")
+
+    def has_conflict(self, new_event):
+        for existing_event in self.events:
+            if (new_event.start_time < existing_event.end_time and
+                    new_event.end_time > existing_event.start_time):
+                return True
+        return False
+
+    def print_events(self):
+        for event in self.events:
+            print(event)
+
+
+# Example usage
+if __name__ == "__main__":
+    scheduler = EventScheduler()
+
+    # Create some sample events
+    event1 = Event("Meeting 1", datetime(2020, 1, 1, 10, 0), datetime(2020, 1, 1, 11, 0))
+    event2 = Event("Meeting 2", datetime(2020, 1, 1, 11, 30), datetime(2020, 1, 1, 12, 30))
+    event3 = Event("Meeting 3", datetime(2020, 1, 1, 11, 0), datetime(2020, 1, 1, 12, 0))  # Conflicting with event2
+
+    # Add events to the scheduler
+    scheduler.add_event(event1)
+    scheduler.add_event(event2)
+    scheduler.add_event(event3)
+
+    # Print the scheduled events
+    scheduler.print_events()
